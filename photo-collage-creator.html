@@ -69,6 +69,12 @@
         justify-content: center;
         background-color: #f9f9f9;
         overflow: hidden;
+        position: relative;
+      }
+
+      .upload-preview.drag-over {
+        border: 2px dashed #4caf50;
+        background-color: rgba(76, 175, 80, 0.1);
       }
 
       .upload-preview img {
@@ -223,36 +229,66 @@
       // Store uploaded images
       const images = [null, null, null, null, null, null];
 
-      // Set up file inputs for the 6 photos
+      // Handle file upload and preview
+      function handleFileUpload(file, index) {
+        if (file && file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          const preview = document.getElementById(`preview${index + 1}`);
+
+          reader.onload = function (event) {
+            const img = new Image();
+            img.onload = function () {
+              // Store the image object
+              images[index] = img;
+
+              // Update the preview
+              preview.innerHTML = "";
+              const previewImg = document.createElement("img");
+              previewImg.src = event.target.result;
+              preview.appendChild(previewImg);
+
+              // Redraw canvas
+              drawImages();
+            };
+            img.src = event.target.result;
+          };
+
+          reader.readAsDataURL(file);
+        }
+      }
+
+      // Set up file inputs and drag & drop for the 6 photos
       for (let i = 1; i <= 6; i++) {
         const fileInput = document.getElementById(`photo${i}`);
         const preview = document.getElementById(`preview${i}`);
+        const index = i - 1;
 
+        // File input change handler
         fileInput.addEventListener("change", function (e) {
           const file = e.target.files[0];
-          if (file) {
-            const reader = new FileReader();
+          handleFileUpload(file, index);
+        });
 
-            reader.onload = function (event) {
-              const img = new Image();
-              img.onload = function () {
-                // Store the image object
-                images[i - 1] = img;
+        // Drag and drop handlers
+        preview.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.classList.add("drag-over");
+        });
 
-                // Update the preview
-                preview.innerHTML = "";
-                const previewImg = document.createElement("img");
-                previewImg.src = event.target.result;
-                preview.appendChild(previewImg);
+        preview.addEventListener("dragleave", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.classList.remove("drag-over");
+        });
 
-                // Redraw canvas
-                drawImages();
-              };
-              img.src = event.target.result;
-            };
+        preview.addEventListener("drop", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.classList.remove("drag-over");
 
-            reader.readAsDataURL(file);
-          }
+          const file = e.dataTransfer.files[0];
+          handleFileUpload(file, index);
         });
       }
 
